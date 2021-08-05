@@ -12,4 +12,3 @@ for i in range(1, 17):
 empty = {k: v for k, v in sorted(Counter(empty).items(), key=lambda item: item[1], reverse=True)}
 [print(k,':',v) for k, v in empty.items()]
 
-findCommon()
