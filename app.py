@@ -95,6 +95,10 @@ def gen_frames():  # generate frame by frame from camera
         yield (b'--frame\r\n'
                 b'Content-Type: image/jpeg\r\n\r\n' + img + b'\r\n')  # concat frame one by one and show result
 
+questions = ["Is it painful to walk around?", "Do you have neck pain?"]
+qIndex = 0
+answers = []
+phase = True
 
 @app.route('/video_feed')
 def video_feed():
@@ -105,7 +109,7 @@ def video_feed():
 @app.route('/')
 def index():
     """Video streaming home page."""
-    return render_template('index.html')
+    return render_template('index.html', q=questions, i=qIndex, a=answers, p=phase)
 
 
 @app.route('/form')
