@@ -1,18 +1,21 @@
-from flask import Flask, request, render_template, Response
-import cv2
-import numpy as np
-import mediapipe as mp
-import time
+from flask import Flask, Response, jsonify, render_template
 from collections import Counter
-import pandas as pd
+import cv2
+import mediapipe as mp
+import json
 
 app = Flask(__name__)
 
-camera = cv2.VideoCapture(0)  # use 0 for web camera
-#  for cctv camera use rtsp://username:password@ip_address:554/user=username_password='password'_channel=channel_number_stream=0.sdp' instead of camera
-# for local webcam use cv2.VideoCapture(0)
+camera = cv2.VideoCapture(0)
 
-
+answers = []
+qIndex = 0
+working = True
+questions = []
+f = open('questions.json',)
+data = json.load(f)
+for i in data['questions']:
+    questions.append(i)
 
 def get_thumb_status(wy, ty):
     differential = wy - ty
@@ -24,8 +27,13 @@ def get_thumb_status(wy, ty):
         return -1
 
 
-def gen_frames():  # generate frame by frame from camera
-    
+def gen_frames():
+
+    global qIndex
+    global answers
+    global working
+    global questions
+
     counter = 0
     thumb_status = 0
     last_status = 0
@@ -71,7 +79,13 @@ def gen_frames():  # generate frame by frame from camera
             counter = 0
 
         if counter >= 50:
-            counter = 50
+            qIndex = qIndex + 1
+            if qIndex == len(questions) + 1:
+                working = False
+            else:
+                answers.append('Yes' if thumb_status == 1 else 'No')
+                print(answers)
+            counter = 0
 
         # cv2.putText(img,"Thumb status: " + str(thumb_status), (10,15), cv2.FONT_HERSHEY_PLAIN, 1, (255,255,255), 1)
         # cv2.putText(img,"Counter: " + str(counter), (10,30), cv2.FONT_HERSHEY_PLAIN, 1, (255,255,255), 1)
@@ -95,10 +109,6 @@ def gen_frames():  # generate frame by frame from camera
         yield (b'--frame\r\n'
                 b'Content-Type: image/jpeg\r\n\r\n' + img + b'\r\n')  # concat frame one by one and show result
 
-questions = ["Is it painful to walk around?", "Do you have neck pain?"]
-qIndex = 0
-answers = []
-phase = True
 
 @app.route('/video_feed')
 def video_feed():
@@ -108,20 +118,18 @@ def video_feed():
 
 @app.route('/')
 def index():
-    """Video streaming home page."""
-    return render_template('index.html', q=questions, i=qIndex, a=answers, p=phase)
+    qIndex = 0
+    answers = []
+    working = True
+    return render_template('index.html')
 
+@app.route('/done')
+def done():
+    return render_template('done.html')
 
-@app.route('/form')
-def form():
-    """Video streaming home page."""
-    return render_template('form.html')
-
-@app.route('/response', methods=['POST'])
-def response():
-    fname = request.form.get("fname")
-    note = request.form.get("note")
-    return render_template("index.html", name=fname, note=note)
+@app.route('/data', methods=['POST'])
+def data():
+    return jsonify({'questions': questions, 'qIndex': qIndex, 'answers': answers, 'working': working}), 200
 
 if __name__ == '__main__':
     app.run(debug=True)

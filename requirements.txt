@@ -1,2 +1,4 @@
 flask
+collections
 opencv-python
+mediapipe
