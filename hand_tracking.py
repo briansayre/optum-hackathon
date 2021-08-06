@@ -1,7 +1,10 @@
+from flask import Flask, render_template, Response
 import cv2
 import mediapipe as mp
 import time
+from app.py import qIndex, answers, phase
 
+app = Flask(__name__)
 cap = cv2.VideoCapture(0)
 
 mpHands = mp.solutions.hands
@@ -19,7 +22,7 @@ while True:
 
     wrist_y = 0
     thumb_y = 0
-    
+
     if results.multi_hand_landmarks:
         for handLms in results.multi_hand_landmarks:
             for id, lm in enumerate(handLms.landmark):
@@ -29,7 +32,7 @@ while True:
                     wrist_y = lm.y
                 if id == 4:
                     thumb_y = lm.y
-                
+
                 h, w, c = img.shape
                 cx, cy = int(lm.x *w), int(lm.y*h)
 
